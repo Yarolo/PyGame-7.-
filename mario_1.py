@@ -34,15 +34,30 @@ tile_width = tile_height = 50
 
 class Tile(pygame.sprite.Sprite):
     def __init__(self, tile_type, pos_x, pos_y):
-        super().__init__(sprite_group)
+        super().__init__(tiles_group)
         self.image = tile_images[tile_type]
         self.rect = self.image.get_rect().move(
             tile_width * pos_x, tile_height * pos_y)
 
 
+class Camera:
+
+    def __init__(self):
+        self.dx = 0
+        self.dy = 0
+
+    def apply(self, obj):
+        obj.rect.x += self.dx
+        obj.rect.y += self.dy
+
+    def update(self, x, y):
+        self.dx = x
+        self.dy = y
+
+
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
-        super().__init__(hero_group)
+        super().__init__(player_group)
         self.image = player_image
         self.rect = self.image.get_rect().move(
             tile_width * pos_x + 15, tile_height * pos_y + 5)
@@ -57,8 +72,8 @@ class Player(pygame.sprite.Sprite):
 player = None
 running = True
 clock = pygame.time.Clock()
-sprite_group = pygame.sprite.Group()
-hero_group = pygame.sprite.Group()
+tiles_group = pygame.sprite.Group()
+player_group = pygame.sprite.Group()
 
 
 # "аварийное завершение" программы в виде отдельной функции
@@ -124,23 +139,29 @@ def move(hero, movement):
     x, y = hero.pos
     if movement == "up":
         if y > 0 and level_map[y - 1][x] == ".":
-            hero.move(x, y - 1)
+            camera.update(0, 50)
+            hero.pos = x, y - 1
     elif movement == "down":
         if y < max_y - 1 and level_map[y + 1][x] == ".":
-            hero.move(x, y + 1)
+            camera.update(0, -50)
+            hero.pos = x, y + 1
     elif movement == "left":
         if x > 0 and level_map[y][x - 1] == ".":
-            hero.move(x - 1, y)
+            camera.update(50, 0)
+            hero.pos = x - 1, y
     elif movement == "right":
         if x < max_x - 1 and level_map[y][x + 1] == ".":
-            hero.move(x + 1, y)
+            camera.update(-50, 0)
+            hero.pos = x + 1, y
 
 
 start_screen()
-pygame.display.set_caption('Перемещение героя')
+pygame.display.set_caption('Перемещение героя. Камера')
 level_map = load_level("map.map")
+
 hero, max_x, max_y = generate_level(level_map)
 while running:
+    camera = Camera()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -154,8 +175,10 @@ while running:
             elif event.key == pygame.K_RIGHT:
                 move(hero, "right")
     screen.fill(pygame.Color("black"))
-    sprite_group.draw(screen)
-    hero_group.draw(screen)
+    for sprite in tiles_group:
+        camera.apply(sprite)
+    tiles_group.draw(screen)
+    player_group.draw(screen)
     clock.tick(FPS)
     pygame.display.flip()
 pygame.quit()
