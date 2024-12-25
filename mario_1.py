@@ -98,11 +98,15 @@ def start_screen():
 
 
 def load_level(filename):
-    filename = "data/" + filename
-    with open(filename, 'r') as mapFile:
-        level_map = [line.strip() for line in mapFile]
-    max_width = max(map(len, level_map))
-    return list(map(lambda x: list(x.ljust(max_width, '.')), level_map))
+    try:
+        filename = "data/" + filename
+        with open(filename, 'r') as mapFile:
+            level_map = [line.strip() for line in mapFile]
+        max_width = max(map(len, level_map))
+        return list(map(lambda x: list(x.ljust(max_width, '.')), level_map))
+    except FileNotFoundError:
+        print('Указанного файла не существует')
+        return
 
 
 def generate_level(level):
@@ -137,25 +141,26 @@ def move(hero, movement):
 
 
 start_screen()
-pygame.display.set_caption('Перемещение героя')
-level_map = load_level("map.map")
-hero, max_x, max_y = generate_level(level_map)
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP:
-                move(hero, "up")
-            elif event.key == pygame.K_DOWN:
-                move(hero, "down")
-            elif event.key == pygame.K_LEFT:
-                move(hero, "left")
-            elif event.key == pygame.K_RIGHT:
-                move(hero, "right")
-    screen.fill(pygame.Color("black"))
-    sprite_group.draw(screen)
-    hero_group.draw(screen)
-    clock.tick(FPS)
-    pygame.display.flip()
+pygame.display.set_caption('Перемещение героя. Дополнительные уровни')
+level_map = load_level(input('Введите имя файла с уровнем: '))
+if level_map:
+    hero, max_x, max_y = generate_level(level_map)
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    move(hero, "up")
+                elif event.key == pygame.K_DOWN:
+                    move(hero, "down")
+                elif event.key == pygame.K_LEFT:
+                    move(hero, "left")
+                elif event.key == pygame.K_RIGHT:
+                    move(hero, "right")
+        screen.fill(pygame.Color("black"))
+        sprite_group.draw(screen)
+        hero_group.draw(screen)
+        clock.tick(FPS)
+        pygame.display.flip()
 pygame.quit()
