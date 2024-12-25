@@ -1,6 +1,7 @@
 import pygame
 import os
 import sys
+import numpy
 
 
 def load_image(name, color_key=None):
@@ -34,7 +35,7 @@ tile_width = tile_height = 50
 
 class Tile(pygame.sprite.Sprite):
     def __init__(self, tile_type, pos_x, pos_y):
-        super().__init__(sprite_group)
+        super().__init__(tiles_group)
         self.image = tile_images[tile_type]
         self.rect = self.image.get_rect().move(
             tile_width * pos_x, tile_height * pos_y)
@@ -42,23 +43,18 @@ class Tile(pygame.sprite.Sprite):
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
-        super().__init__(hero_group)
+        super().__init__(player_group)
         self.image = player_image
         self.rect = self.image.get_rect().move(
             tile_width * pos_x + 15, tile_height * pos_y + 5)
         self.pos = (pos_x, pos_y)
 
-    def move(self, x, y):
-        self.pos = (x, y)
-        self.rect = self.image.get_rect().move(
-            tile_width * self.pos[0] + 15, tile_height * self.pos[1] + 5)
-
 
 player = None
 running = True
 clock = pygame.time.Clock()
-sprite_group = pygame.sprite.Group()
-hero_group = pygame.sprite.Group()
+tiles_group = pygame.sprite.Group()
+player_group = pygame.sprite.Group()
 
 
 # "аварийное завершение" программы в виде отдельной функции
@@ -124,21 +120,29 @@ def move(hero, movement):
     x, y = hero.pos
     if movement == "up":
         if y > 0 and level_map[y - 1][x] == ".":
-            hero.move(x, y - 1)
+            remake_level(1, 0)
     elif movement == "down":
         if y < max_y - 1 and level_map[y + 1][x] == ".":
-            hero.move(x, y + 1)
+            remake_level(-1, 0)
     elif movement == "left":
         if x > 0 and level_map[y][x - 1] == ".":
-            hero.move(x - 1, y)
+            remake_level(1, 1)
     elif movement == "right":
         if x < max_x - 1 and level_map[y][x + 1] == ".":
-            hero.move(x + 1, y)
+            remake_level(-1, 1)
+
+
+def remake_level(x, y):
+    global level_map
+    np = numpy.array(level_map)
+    np = numpy.roll(np, x, y)
+    level_map = list([[str(j) for j in list(i)] for i in np])
 
 
 start_screen()
-pygame.display.set_caption('Перемещение героя')
-level_map = load_level("map.map")
+pygame.display.set_caption('Перемещение героя. Новый уровень')
+level_map = load_level("map1.map")
+
 hero, max_x, max_y = generate_level(level_map)
 while running:
     for event in pygame.event.get():
@@ -154,8 +158,10 @@ while running:
             elif event.key == pygame.K_RIGHT:
                 move(hero, "right")
     screen.fill(pygame.Color("black"))
-    sprite_group.draw(screen)
-    hero_group.draw(screen)
+    tiles_group.remove()
+    generate_level(level_map)
+    tiles_group.draw(screen)
+    player_group.draw(screen)
     clock.tick(FPS)
     pygame.display.flip()
 pygame.quit()
